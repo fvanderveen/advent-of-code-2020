@@ -8,10 +8,11 @@ mod days {
     pub mod day5;
     pub mod day6;
     pub mod day7;
+    pub mod day8;
 }
 
 fn main() {
-    let day = 7;
+    let day = 8;
 
     match day {
         1 => {
@@ -41,6 +42,10 @@ fn main() {
         7 => {
             days::day7::puzzle1();
             days::day7::puzzle2();
+        }
+        8 => {
+            days::day8::puzzle1();
+            days::day8::puzzle2();
         }
         _ => {}
     }
