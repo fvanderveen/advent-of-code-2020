@@ -1,24 +1,13 @@
-use std::fs::{read_to_string};
+use crate::util::input::read_numeric_input;
 
-fn read_input_file() -> Result<Vec<i32>, String> {
-    let data = read_to_string("input/day1.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            let results: Result<Vec<_>, _> = data.split("\n").map(|l| l.parse::<i32>()).collect();
-            match results {
-                Err(e) => Err(format!("Could not parse all lines? {}", e)),
-                Ok(numbers) => Ok(numbers)
-            }
-        }
-    };
-}
+struct Pair(i128, i128);
 
-struct Pair (i32, i32);
-
-fn find_pair(input: &Vec<i32>, search: i32) -> Result<Pair, String> {
+fn find_pair(input: &Vec<i128>, search: i128) -> Result<Pair, String> {
     if input.len() < 2 {
-        return Err(format!("Could not find pair of numbers with sum {}", search));
+        return Err(format!(
+            "Could not find pair of numbers with sum {}",
+            search
+        ));
     }
 
     let first = input[0];
@@ -34,10 +23,10 @@ fn find_pair(input: &Vec<i32>, search: i32) -> Result<Pair, String> {
 }
 
 pub fn puzzle1() {
-    let numbers = match read_input_file() {
+    let numbers = match read_numeric_input(1) {
         Ok(numbers) => numbers,
         Err(e) => {
-            println!("Could not read/parse file: {}", e);
+            eprintln!("Could not read/parse file: {}", e);
             return;
         }
     };
@@ -45,7 +34,7 @@ pub fn puzzle1() {
     // Now that we have our list of numbers, we need to find two numbers (x, y) => x + y = 2020
     // The result we are after is: x * y
     match find_pair(&numbers, 2020) {
-        Err(e) => println!("{}", e),
+        Err(e) => eprintln!("{}", e),
         Ok(Pair(first, second)) => {
             println!("Found 2020 in {} + {}", first, second);
             println!("Solution to puzzle1: {}", first * second);
@@ -53,11 +42,14 @@ pub fn puzzle1() {
     }
 }
 
-struct Triple(i32, i32, i32);
+struct Triple(i128, i128, i128);
 
-fn find_triplet(input: &Vec<i32>, search: i32) -> Result<Triple, String> {
+fn find_triplet(input: &Vec<i128>, search: i128) -> Result<Triple, String> {
     if input.len() < 3 {
-        return Err(format!("Could not find triplet of numbers with sum {}", search));
+        return Err(format!(
+            "Could not find triplet of numbers with sum {}",
+            search
+        ));
     }
 
     let first = input[0];
@@ -65,21 +57,21 @@ fn find_triplet(input: &Vec<i32>, search: i32) -> Result<Triple, String> {
 
     return match find_pair(&rest, search - first) {
         Ok(Pair(second, third)) => Ok(Triple(first, second, third)),
-        Err(_) => find_triplet(&rest, search)
-    }
+        Err(_) => find_triplet(&rest, search),
+    };
 }
 
 pub fn puzzle2() {
-    let numbers = match read_input_file() {
+    let numbers = match read_numeric_input(1) {
         Ok(numbers) => numbers,
         Err(e) => {
-            println!("Could not read/parse file: {}", e);
+            eprintln!("Could not read/parse file: {}", e);
             return;
         }
     };
 
     match find_triplet(&numbers, 2020) {
-        Err(e) => println!("{}", e),
+        Err(e) => eprintln!("{}", e),
         Ok(Triple(first, second, third)) => {
             println!("Found 2020 in {} + {} + {}", first, second, third);
             println!("Solution to puzzle1: {}", first * second * third);

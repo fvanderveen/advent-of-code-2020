@@ -1,14 +1,4 @@
-use std::fs::read_to_string;
-
-fn read_input_file() -> Result<String, String> {
-    let data = read_to_string("input/day8.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            return Ok(data);
-        }
-    };
-}
+use crate::util::input::read_raw_input;
 
 struct Instruction {
     op: String,
@@ -76,11 +66,13 @@ fn find_loop(program: &Vec<Instruction>) -> i32 {
 }
 
 pub fn puzzle1() {
-    let data = read_input_file().unwrap();
-    let program = parse_program(data).unwrap();
-    let result = find_loop(&program);
-
-    println!("Puzzle 1 result = {}", result);
+    match read_raw_input(8)
+        .and_then(parse_program)
+        .map(|p| find_loop(&p))
+    {
+        Err(e) => eprintln!("{}", e),
+        Ok(result) => println!("Puzzle 1 result = {}", result),
+    }
 }
 
 fn try_run_program(program: Vec<&Instruction>) -> Result<i32, ()> {
@@ -163,9 +155,11 @@ fn try_fix_program(program: Vec<Instruction>) -> Result<i32, String> {
 }
 
 pub fn puzzle2() {
-    let data = read_input_file().unwrap();
-    let program = parse_program(data).unwrap();
-    let result = try_fix_program(program).unwrap();
-
-    println!("Puzzle 2 result = {}", result);
+    match read_raw_input(8)
+        .and_then(parse_program)
+        .and_then(try_fix_program)
+    {
+        Err(e) => eprintln!("{}", e),
+        Ok(result) => println!("Puzzle 2 result = {}", result),
+    }
 }

@@ -1,19 +1,7 @@
+use crate::util::input::read_mapped_input;
 use core::fmt;
 use std::collections::HashMap;
-use std::fs::read_to_string;
 use std::iter::FromIterator;
-
-fn read_input_file() -> Result<Vec<String>, String> {
-    let data = read_to_string("input/day5.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            // This data is interesting. Entries are separated by a _blank line_. Entries consist of
-            // `key:value` pairs separated by whitespace.
-            return Ok(data.split("\n").map(str::to_owned).collect());
-        }
-    };
-}
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 struct Seat {
@@ -28,7 +16,7 @@ impl fmt::Display for Seat {
     }
 }
 
-fn parse_seat(location: &String) -> Seat {
+fn parse_seat(location: String) -> Result<Seat, String> {
     // The location is binary-encoded for a seat in one of the 128 rows, and 8 columns.
     // The row is encoded as a string of 7 'F' or 'B' characters, where F means lower and B means upper half.
     // Same for col, encoded using 3 'L' or 'R' characters, where L means lower and R means upper half.
@@ -54,17 +42,17 @@ fn parse_seat(location: &String) -> Seat {
         }
     }
 
-    return Seat {
+    Ok(Seat {
         row: min_row,
         col: min_col,
         id: min_row * 8 + min_col,
-    };
+    })
 }
 
 #[test]
 fn test_parse_seat() {
     assert_eq!(
-        parse_seat(&"FBFBBFFRLR".to_owned()),
+        parse_seat("FBFBBFFRLR".to_owned()),
         Seat {
             row: 44,
             col: 5,
@@ -72,7 +60,7 @@ fn test_parse_seat() {
         }
     );
     assert_eq!(
-        parse_seat(&"BFFFBBFRRR".to_owned()),
+        parse_seat("BFFFBBFRRR".to_owned()),
         Seat {
             row: 70,
             col: 7,
@@ -80,7 +68,7 @@ fn test_parse_seat() {
         }
     );
     assert_eq!(
-        parse_seat(&"FFFBBBFRRR".to_owned()),
+        parse_seat("FFFBBBFRRR".to_owned()),
         Seat {
             row: 14,
             col: 7,
@@ -88,7 +76,7 @@ fn test_parse_seat() {
         }
     );
     assert_eq!(
-        parse_seat(&"BBFFBBFRLL".to_owned()),
+        parse_seat("BBFFBBFRLL".to_owned()),
         Seat {
             row: 102,
             col: 4,
@@ -98,7 +86,7 @@ fn test_parse_seat() {
 }
 
 pub fn puzzle1() {
-    let input = match read_input_file() {
+    let seats = match read_mapped_input(5, parse_seat) {
         Err(e) => {
             println!("{}", e);
             return;
@@ -106,11 +94,7 @@ pub fn puzzle1() {
         Ok(v) => v,
     };
 
-    let max_seat_by_id = input
-        .into_iter()
-        .map(|l| parse_seat(&l))
-        .max_by(|s1, s2| s1.id.cmp(&s2.id))
-        .unwrap();
+    let max_seat_by_id = seats.iter().max_by(|s1, s2| s1.id.cmp(&s2.id)).unwrap();
     println!("Puzzle 1, max seat ID = {}", max_seat_by_id.id);
 }
 
@@ -131,12 +115,12 @@ fn get_free_seats(seats: &HashMap<i32, Seat>) -> Vec<Seat> {
 }
 
 pub fn puzzle2() {
-    let seats = match read_input_file() {
+    let seats = match read_mapped_input(5, parse_seat) {
         Err(e) => {
             println!("{}", e);
             return;
         }
-        Ok(v) => HashMap::from_iter(v.into_iter().map(|l| parse_seat(&l)).map(|s| (s.id, s))),
+        Ok(v) => HashMap::from_iter(v.into_iter().map(|s| (s.id, s))),
     };
 
     // Find free seat in the plane, some at the front & end do not exist, so those shouldn't be our

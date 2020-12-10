@@ -1,6 +1,6 @@
+use crate::util::input::read_mapped_input;
 use regex::Regex;
 use std::fmt;
-use std::fs::read_to_string;
 
 struct Policy {
     min: i32,
@@ -20,55 +20,39 @@ impl fmt::Display for DbEntry {
     }
 }
 
-struct ParseError(String);
-
-fn parse_db_entry(line: &str) -> Result<DbEntry, ParseError> {
+fn parse_db_entry(line: String) -> Result<DbEntry, String> {
     // Line format:
     // \d+-\d+\s+[a-z]:\s+[a-z]+
     let format =
         Regex::new(r"^(?P<min>\d+)-(?P<max>\d+)\s+(?P<char>[a-z]):\s+(?P<password>[a-z]+)$")
-            .map_err(|e| ParseError(e.to_string()))?;
+            .map_err(|e| e.to_string())?;
 
     format
-        .captures(line)
+        .captures(line.as_str())
         .map(|mat| {
             let min = mat
                 .name("min")
                 .map(|v| v.as_str().parse::<i32>())
-                .ok_or(ParseError("No match for min".to_string()))?
-                .map_err(|ipe| ParseError(ipe.to_string()))?;
+                .ok_or("No match for min".to_string())?
+                .map_err(|ipe| ipe.to_string())?;
             let max = mat
                 .name("max")
                 .map(|v| v.as_str().parse::<i32>())
-                .ok_or(ParseError("No match for max".to_string()))?
-                .map_err(|ipe| ParseError(ipe.to_string()))?;
+                .ok_or("No match for max".to_string())?
+                .map_err(|ipe| (ipe.to_string()))?;
             let letter: char = mat
                 .name("char")
                 .map(|v| v.as_str().chars().nth(0))
-                .ok_or(ParseError("No match for char".to_string()))?
-                .ok_or(ParseError("No first char".to_string()))?;
+                .ok_or("No match for char".to_string())?
+                .ok_or("No first char".to_string())?;
             let password = mat
                 .name("password")
                 .map(|v| v.as_str())
-                .ok_or(ParseError("No match for password".to_string()))?;
+                .ok_or("No match for password".to_string())?;
 
             Ok(DbEntry(Policy { min, max, letter }, password.to_string()))
         })
-        .ok_or(ParseError(format!("Regex match failure, '{}'", line)))?
-}
-
-fn read_input_file() -> Result<Vec<DbEntry>, String> {
-    let data = read_to_string("input/day2.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            let results: Result<Vec<_>, _> = data.split("\n").map(parse_db_entry).collect();
-            match results {
-                Err(ParseError(details)) => Err(format!("Could not parse all lines: {}", details)),
-                Ok(entries) => Ok(entries),
-            }
-        }
-    };
+        .ok_or(format!("Regex match failure, '{}'", line))?
 }
 
 fn password_valid(DbEntry(policy, password): &DbEntry) -> bool {
@@ -85,9 +69,9 @@ fn password_valid(DbEntry(policy, password): &DbEntry) -> bool {
 }
 
 pub fn puzzle1() {
-    let entries = match read_input_file() {
+    let entries = match read_mapped_input(2, parse_db_entry) {
         Err(e) => {
-            println!("{}", e);
+            eprintln!("{}", e);
             return;
         }
         Ok(v) => v,
@@ -112,9 +96,9 @@ fn password_valid2(DbEntry(policy, password): &DbEntry) -> bool {
 }
 
 pub fn puzzle2() {
-    let entries = match read_input_file() {
+    let entries = match read_mapped_input(2, parse_db_entry) {
         Err(e) => {
-            println!("{}", e);
+            eprintln!("{}", e);
             return;
         }
         Ok(v) => v,

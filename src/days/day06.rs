@@ -1,14 +1,4 @@
-use std::fs::read_to_string;
-
-fn read_input_file() -> Result<String, String> {
-    let data = read_to_string("input/day6.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            return Ok(data);
-        }
-    };
-}
+use crate::util::input::read_raw_input;
 
 struct Group {
     answers: Vec<String>,
@@ -67,7 +57,7 @@ fn test_get_group_answer_count() {
 pub fn puzzle1() {
     // For each group, count the unique answers
     // Puzzle 1 output is the sum of those
-    let groups = match read_input_file() {
+    let groups = match read_raw_input(6) {
         Err(e) => {
             println!("{}", e);
             return;
@@ -126,7 +116,7 @@ fn test_get_group_mutual_answer_count() {
 
 pub fn puzzle2() {
     // Oops. We needed the answers _everyone_ in the group answered!
-    let groups = match read_input_file() {
+    let groups = match read_raw_input(6) {
         Err(e) => {
             println!("{}", e);
             return;

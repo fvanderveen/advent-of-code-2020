@@ -1,14 +1,4 @@
-use std::fs::read_to_string;
-
-fn read_input_file() -> Result<String, String> {
-    let data = read_to_string("input/day9.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            return Ok(data);
-        }
-    };
-}
+use crate::util::input::read_raw_input;
 
 fn parse_data(data: String) -> Result<Vec<usize>, String> {
     data.split("\n")
@@ -56,7 +46,7 @@ fn test_find_first_invalid_number() {
 }
 
 pub fn puzzle1() {
-    let list = match read_input_file().and_then(parse_data) {
+    let list = match read_raw_input(9).and_then(parse_data) {
         Ok(v) => v,
         Err(e) => {
             println!("Could not read/parse file: {}", e);
@@ -102,7 +92,7 @@ fn find_contiguous_set(list: &[usize], sum: usize) -> Option<&[usize]> {
 }
 
 pub fn puzzle2() {
-    let list = match read_input_file().and_then(parse_data) {
+    let list = match read_raw_input(9).and_then(parse_data) {
         Ok(v) => v,
         Err(e) => {
             println!("Could not read/parse file: {}", e);

@@ -1,15 +1,5 @@
+use crate::util::input::read_raw_input;
 use std::collections::HashMap;
-use std::fs::read_to_string;
-
-fn read_input_file() -> Result<String, String> {
-    let data = read_to_string("input/day7.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            return Ok(data);
-        }
-    };
-}
 
 #[derive(Eq, PartialEq, Debug)]
 struct Content {
@@ -178,7 +168,7 @@ fn test_parse_line() {
 }
 
 fn read_input_data() -> Result<HashMap<String, Vec<Content>>, String> {
-    let data = read_input_file()?;
+    let data = read_raw_input(7)?;
     // Each line contains either:
     // - <bag_type> bags contain <# bag_type>[, …].
     // - <bag_type> bags contain no other bags.

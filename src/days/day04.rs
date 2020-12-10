@@ -1,4 +1,4 @@
-use std::fs::read_to_string;
+use crate::util::input::read_raw_input;
 
 #[derive(Eq, PartialEq)]
 struct Passport {
@@ -61,8 +61,7 @@ fn read_entry(data: String) -> Passport {
 }
 
 fn read_input_file() -> Result<Vec<Passport>, String> {
-    let data = read_to_string("input/day4.txt");
-    return match data {
+    return match read_raw_input(4) {
         Err(err) => Err(err.to_string()),
         Ok(data) => {
             // This data is interesting. Entries are separated by a _blank line_. Entries consist of

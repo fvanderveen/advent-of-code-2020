@@ -1,25 +1,8 @@
+use crate::util::input;
 use std::collections::HashMap;
-use std::fs::read_to_string;
-
-fn read_input_file() -> Result<String, String> {
-    let data = read_to_string("input/day10.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            return Ok(data);
-        }
-    };
-}
-
-fn parse_input(input: String) -> Result<Vec<i32>, String> {
-    input
-        .split("\n")
-        .map(|l| l.parse::<i32>().map_err(|e| format!("{}", e)))
-        .collect()
-}
 
 pub fn puzzle1() {
-    let adapters = match read_input_file().and_then(parse_input) {
+    let adapters = match input::read_numeric_input(10) {
         Err(e) => {
             eprintln!("{}", e);
             return;
@@ -58,7 +41,7 @@ pub fn puzzle1() {
 }
 
 pub fn puzzle2() {
-    let adapters = match read_input_file().and_then(parse_input) {
+    let adapters = match input::read_numeric_input(10) {
         Err(e) => {
             eprintln!("{}", e);
             return;
@@ -162,7 +145,7 @@ pub fn puzzle2() {
 // 0 = 1 * 3 to 2, 1 * 2 to 3 = 5
 // Hallelujah!
 
-fn get_possible_connection_count(adapters: &Vec<i32>) -> i128 {
+fn get_possible_connection_count(adapters: &Vec<i128>) -> i128 {
     // first, sort this thing...
     let mut sorted = adapters.clone();
     sorted.sort();
@@ -173,7 +156,7 @@ fn get_possible_connection_count(adapters: &Vec<i32>) -> i128 {
     // that is also 1, as there is nothing to skip. From there on, we add all calculated values
     // together from the numbers we can reach.
 
-    let mut value_map: HashMap<i32, i128> = HashMap::with_capacity(sorted.len());
+    let mut value_map: HashMap<i128, i128> = HashMap::with_capacity(sorted.len());
 
     for i in 0..sorted.len() {
         let current = sorted[i];

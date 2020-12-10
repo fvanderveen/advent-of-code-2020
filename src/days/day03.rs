@@ -1,4 +1,4 @@
-use std::fs::read_to_string;
+use crate::util::input::read_mapped_input;
 
 #[derive(Eq, PartialEq)]
 enum Cell {
@@ -14,22 +14,8 @@ fn parse_char(chr: char) -> Result<Cell, String> {
     }
 }
 
-fn parse_line(line: &str) -> Result<Vec<Cell>, String> {
+fn parse_line(line: String) -> Result<Vec<Cell>, String> {
     line.chars().map(parse_char).collect()
-}
-
-fn read_input_file() -> Result<Vec<Vec<Cell>>, String> {
-    let data = read_to_string("input/day3.txt");
-    return match data {
-        Err(err) => Err(err.to_string()),
-        Ok(data) => {
-            let results: Result<Vec<_>, _> = data.split("\n").map(parse_line).collect();
-            match results {
-                Err(details) => Err(format!("Could not parse all lines: {}", details)),
-                Ok(entries) => Ok(entries),
-            }
-        }
-    };
 }
 
 fn get_tree_count(map: &Vec<Vec<Cell>>, dx: usize, dy: usize) -> usize {
@@ -51,7 +37,7 @@ fn get_tree_count(map: &Vec<Vec<Cell>>, dx: usize, dy: usize) -> usize {
 }
 
 pub fn puzzle1() {
-    let cells = match read_input_file() {
+    let cells = match read_mapped_input(3, parse_line) {
         Err(error) => {
             println!("{}", error);
             return;
@@ -66,7 +52,7 @@ pub fn puzzle1() {
 }
 
 pub fn puzzle2() {
-    let cells = match read_input_file() {
+    let cells = match read_mapped_input(3, parse_line) {
         Err(error) => {
             println!("{}", error);
             return;
