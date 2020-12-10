@@ -2,6 +2,7 @@ extern crate lazy_static;
 
 mod days {
     pub mod day1;
+    pub mod day10;
     pub mod day2;
     pub mod day3;
     pub mod day4;
@@ -13,7 +14,7 @@ mod days {
 }
 
 fn main() {
-    let day = 9;
+    let day = 10;
 
     match day {
         1 => {
@@ -51,6 +52,10 @@ fn main() {
         9 => {
             days::day9::puzzle1();
             days::day9::puzzle2();
+        }
+        10 => {
+            days::day10::puzzle1();
+            days::day10::puzzle2();
         }
         _ => {}
     }
