@@ -53,35 +53,35 @@ fn parse_seat(location: String) -> Result<Seat, String> {
 fn test_parse_seat() {
     assert_eq!(
         parse_seat("FBFBBFFRLR".to_owned()),
-        Seat {
+        Ok(Seat {
             row: 44,
             col: 5,
             id: 357
-        }
+        })
     );
     assert_eq!(
         parse_seat("BFFFBBFRRR".to_owned()),
-        Seat {
+        Ok(Seat {
             row: 70,
             col: 7,
             id: 567
-        }
+        })
     );
     assert_eq!(
         parse_seat("FFFBBBFRRR".to_owned()),
-        Seat {
+        Ok(Seat {
             row: 14,
             col: 7,
             id: 119
-        }
+        })
     );
     assert_eq!(
         parse_seat("BBFFBBFRLL".to_owned()),
-        Seat {
+        Ok(Seat {
             row: 102,
             col: 4,
             id: 820
-        }
+        })
     );
 }
 
