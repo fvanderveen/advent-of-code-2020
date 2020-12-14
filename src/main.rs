@@ -6,7 +6,7 @@ mod days;
 mod util;
 
 fn main() {
-    let latest_day = 11;
+    let latest_day = 12;
 
     let mut input = String::new();
     print!(
@@ -77,6 +77,10 @@ fn main() {
         Ok(11) => {
             days::day11::puzzle1();
             days::day11::puzzle2();
+        }
+        Ok(12) => {
+            days::day12::puzzle1();
+            days::day12::puzzle2();
         }
         Ok(v) => eprintln!("I don't know about day {}", v),
         Err(e) => eprintln!("{}", e),
