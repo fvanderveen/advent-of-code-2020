@@ -6,7 +6,7 @@ mod days;
 mod util;
 
 fn main() {
-    let latest_day = 22;
+    let latest_day = 20;
 
     let mut input = String::new();
     print!(

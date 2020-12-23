@@ -4,6 +4,7 @@ use crate::util::input::read_raw_input;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt;
+use std::fs::read_to_string;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 enum Pixel {
@@ -28,16 +29,16 @@ struct Tile {
 
 impl fmt::Display for Tile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Tile {}:\n{}",
-            self.id,
-            self.image
-                .iter()
-                .map(|l| l.iter().map(|p| p.to_string()).collect::<String>() + "\n")
-                .collect::<String>()
-        )
+        write!(f, "Tile {}:\n{}", self.id, image_to_string(self.image))
     }
+}
+
+fn image_to_string(image: [[Pixel; 10]; 10]) -> String {
+    image
+        .iter()
+        .map(|l| l.iter().map(|p| p.to_string()).collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn parse_tile(data: &str) -> Result<Tile, String> {
@@ -132,39 +133,34 @@ impl Location {
     }
 }
 
-fn reversed(pixels: Vec<Pixel>) -> Vec<Pixel> {
-    pixels.into_iter().rev().collect()
-}
-
 fn get_side(tile: &Tile, side: Side) -> Vec<Pixel> {
     match side {
         North => tile.image[0].to_vec(),
-        South => tile.image[9].iter().cloned().rev().collect(),
+        South => tile.image[9].to_vec(),
         East => tile.image.iter().map(|l| l[9]).collect(),
-        West => tile.image.iter().map(|l| l[0]).rev().collect(),
+        West => tile.image.iter().map(|l| l[0]).collect(),
     }
 }
 
-fn align(tile: &Tile, side: Side, target: &Tile) -> Vec<Side> {
-    let mut search = get_side(tile, side);
-    search.reverse(); // Reverse search, as we need to find sides that actually mirror it.
-
-    let mut result = vec![];
-
-    if search.eq(&get_side(target, North)) {
-        result.push(North)
+fn flip(tile: &Tile) -> Tile {
+    let flipped: [[Pixel; 10]; 10] = tile
+        .image
+        .iter()
+        .map(|l| -> [Pixel; 10] {
+            l.iter()
+                .rev()
+                .cloned()
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap()
+        })
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
+    Tile {
+        id: tile.id,
+        image: flipped,
     }
-    if search.eq(&get_side(target, East)) {
-        result.push(East)
-    }
-    if search.eq(&get_side(target, South)) {
-        result.push(South)
-    }
-    if search.eq(&get_side(target, West)) {
-        result.push(West)
-    }
-
-    result
 }
 
 fn rotate(tile: &Tile, orientation: Side) -> Tile {
@@ -227,97 +223,117 @@ fn rotate(tile: &Tile, orientation: Side) -> Tile {
     }
 }
 
-fn inverse(side: Side) -> Side {
-    match side {
-        North => South,
-        South => North,
-        West => East,
-        East => West,
-    }
-}
-
-fn orientation_for_align(side: Side, alignment: Side) -> Side {
-    // Return a side that can be used for orientation, so that the to-be-aligned tile
-    // is oriented correctly to be on the given side of a tile, using its alignment side.
-
-    match side {
-        North => inverse(alignment),
-        South => alignment,
-        East => match alignment {
-            North => East,
-            South => West,
-            East => South,
-            West => North,
-        },
-        West => match alignment {
-            North => West,
-            South => East,
-            East => North,
-            West => South,
-        },
-    }
-}
-
-fn try_fit_tile(
-    point: &Location,
-    grid: &HashMap<Location, Tile>,
-    tiles: &Vec<&Tile>,
-) -> Option<Tile> {
-    // Check which sides have tiles, and which sides we need to match up.
-    let north = grid
-        .get(&point.translate(0, -1))
-        .map(|t| reversed(get_side(t, South)));
-    let south = grid
-        .get(&point.translate(0, 1))
-        .map(|t| reversed(get_side(t, North)));
-    let west = grid
-        .get(&point.translate(-1, 0))
-        .map(|t| reversed(get_side(t, East)));
-    let east = grid
-        .get(&point.translate(1, 0))
-        .map(|t| reversed(get_side(t, West)));
+fn fits(tile: Tile, location: Location, map: &HashMap<Location, Tile>) -> bool {
+    let north = map
+        .get(&location.translate(0, -1))
+        .map(|t| get_side(t, South));
+    let south = map
+        .get(&location.translate(0, 1))
+        .map(|t| get_side(t, North));
+    let west = map
+        .get(&location.translate(-1, 0))
+        .map(|t| get_side(t, East));
+    let east = map
+        .get(&location.translate(1, 0))
+        .map(|t| get_side(t, West));
 
     if north.is_none() && south.is_none() && west.is_none() && east.is_none() {
-        return None;
+        return true;
     }
 
-    // For each tile, try all orientations, and see if it fits against the sides that are there.
-    // If we find just one tile, that's the one. Otherwise, we can't be sure and return nothing.
-    let mut options = vec![];
-    for tile in tiles {
-        for orientation in vec![North, South, East, West] {
-            let rotated = rotate(tile, orientation);
-            let fits_north = north
-                .clone()
-                .map(|v| get_side(&rotated, North).eq(&v))
-                .unwrap_or(true);
-            let fits_south = south
-                .clone()
-                .map(|v| get_side(&rotated, South).eq(&v))
-                .unwrap_or(true);
-            let fits_east = east
-                .clone()
-                .map(|v| get_side(&rotated, East).eq(&v))
-                .unwrap_or(true);
-            let fits_west = west
-                .clone()
-                .map(|v| get_side(&rotated, West).eq(&v))
-                .unwrap_or(true);
+    let fits_north = north
+        .clone()
+        .map(|v| get_side(&tile, North).eq(&v))
+        .unwrap_or(true);
+    let fits_south = south
+        .clone()
+        .map(|v| get_side(&tile, South).eq(&v))
+        .unwrap_or(true);
+    let fits_east = east
+        .clone()
+        .map(|v| get_side(&tile, East).eq(&v))
+        .unwrap_or(true);
+    let fits_west = west
+        .clone()
+        .map(|v| get_side(&tile, West).eq(&v))
+        .unwrap_or(true);
 
-            if fits_north && fits_south && fits_east && fits_west {
-                options.push(rotated);
+    return fits_north && fits_south && fits_west && fits_east;
+}
+
+fn brute_force(
+    tiles: Vec<Tile>,
+    map: &HashMap<Location, Tile>,
+    location: Location,
+    size: i32,
+    level: u32,
+) -> Option<(usize, HashMap<Location, Tile>)> {
+    if tiles.len() == 0 {
+        // We done it!
+        // Get the IDs in the corners, and sum them
+        let tl = map.get(&Location { x: 0, y: 0 }).unwrap().id as usize;
+        let tr = map.get(&Location { x: size - 1, y: 0 }).unwrap().id as usize;
+        let bl = map.get(&Location { x: 0, y: size - 1 }).unwrap().id as usize;
+        let br = map
+            .get(&Location {
+                x: size - 1,
+                y: size - 1,
+            })
+            .unwrap()
+            .id as usize;
+        return Some((tl * tr * bl * br, map.clone()));
+    }
+
+    // Find all tiles and orientations we can fit in `location`, and continue with that:
+    for tile in &tiles {
+        for orientation in vec![North, South, East, West] {
+            for flipped in vec![true, false] {
+                let rotated = if flipped {
+                    rotate(&flip(&tile), orientation)
+                } else {
+                    rotate(&tile, orientation)
+                };
+
+                if fits(rotated, location, &map) {
+                    // Create a clone of the map, and insert this tile
+                    let mut sub_map = map.clone();
+                    sub_map.insert(location, rotated);
+                    let sub_tiles = tiles
+                        .iter()
+                        .filter(|t| t.id != tile.id)
+                        .cloned()
+                        .collect::<Vec<_>>();
+
+                    // get a next locations:
+                    let next_location = if location.x == (size - 1) {
+                        Location {
+                            x: 0,
+                            y: location.y + 1,
+                        }
+                    } else {
+                        Location {
+                            x: location.x + 1,
+                            y: location.y,
+                        }
+                    };
+
+                    if let Some(result) =
+                        brute_force(sub_tiles, &sub_map, next_location, size, level + 1)
+                    {
+                        return Some(result);
+                    }
+                }
             }
         }
     }
 
-    if options.len() == 1 {
-        Some(options[0])
-    } else {
-        None
-    }
+    None
 }
 
+#[allow(unreachable_code)]
 pub fn puzzle1() {
+    return; // Heavy, so ignore by default (we stored the map)
+
     // Input are image tiles. The borders should line up, we need to assemble the image
     let tiles = match read_tiles() {
         Err(e) => return eprintln!("{}", e),
@@ -326,75 +342,119 @@ pub fn puzzle1() {
 
     println!("Read info about {} tiles", tiles.len());
 
-    let size = (tiles.len() as f64).sqrt() as usize;
+    let size = (tiles.len() as f64).sqrt() as i32;
     println!("Expecting to form a {0}x{0} grid", size);
 
-    let mut min_x = -1;
-    let mut max_x = 1;
-    let mut min_y = -1;
-    let mut max_y = 1;
-    let mut grid = HashMap::new();
-    grid.insert(Location { x: 0, y: 0 }, tiles[0]);
+    let map = HashMap::new();
+    let (p1, map) = match brute_force(tiles, &map, Location { x: 0, y: 0 }, size, 0) {
+        Some(v) => v,
+        None => return println!("Puzzle 1: no result, probably a bug."),
+    };
 
-    // Try to fill tile uniquely around already known tiles:
-    loop {
-        println!(
-            "There are {} tiles left to place",
-            tiles
-                .iter()
-                .filter(|t| !grid.values().any(|pt| pt.id == t.id))
-                .count()
-        );
+    println!("Puzzle 1: Result = {}", p1);
 
-        let mut placed = false;
+    // Puzzle 2 is here, due to the use of the map.
 
-        for x in min_x..=max_x {
-            for y in min_y..=max_y {
-                // If we don't have a tile here, just continue.
-                let point = Location { x, y };
-                if grid.get(&point).is_some() {
-                    // Already filled, so let's continue
-                    continue;
-                }
-
-                let available_tiles = tiles
+    // Create the full image by stripping the tile borders
+    let mut image: Vec<String> = vec![];
+    for y in 0..size {
+        for l in 1..9 {
+            let mut line = "".to_owned();
+            for x in 0..size {
+                line += map.get(&Location { x, y }).unwrap().image[l][1..9]
                     .iter()
-                    .filter(|t| !grid.values().any(|pt| pt.id == t.id))
-                    .collect::<Vec<_>>();
-
-                if let Some(tile) = try_fit_tile(&point, &grid, &available_tiles) {
-                    // We matched a single option, let's set it.
-                    println!("Found a tile for ({},{})", point.x, point.y);
-                    grid.insert(point, tile);
-                    placed = true;
-                }
+                    .map(Pixel::to_string)
+                    .collect::<String>()
+                    .as_str();
             }
+            image.push(line);
         }
+    }
 
-        if !placed {
-            panic!("Couldn't place any tiles this round :(");
-        }
-
-        println!("Current image:");
-        for y in min_y..=max_y {
-            let mut line = grid.iter().filter(|(k, _)| k.y == y).collect::<Vec<_>>();
-            line.sort_by(|(l1, _), (l2, _)| l1.x.cmp(&l2.x));
-            for i in 0..10 {
-                println!(
-                    "| {} |",
-                    line.iter()
-                        .map(|(_, t)| t.image[i].iter().map(Pixel::to_string).collect::<String>())
-                        .collect::<String>()
-                );
-            }
-        }
-
-        // Calculate new min and max values (grow the grid to fill by one slot)
-        min_x = grid.keys().map(|l| l.x).min().unwrap_or(min_x);
-        max_x = grid.keys().map(|l| l.x).max().unwrap_or(max_x);
-        min_y = grid.keys().map(|l| l.y).min().unwrap_or(min_y);
-        max_y = grid.keys().map(|l| l.y).max().unwrap_or(max_y);
+    println!("Map:");
+    for line in &image {
+        println!("{}", line);
     }
 }
 
-pub fn puzzle2() {}
+pub fn puzzle2() {
+    let map = match read_to_string("input/day20_map.txt").map(|map| {
+        map.trim()
+            .split("\n")
+            .map(str::to_owned)
+            .collect::<Vec<_>>()
+    }) {
+        Err(e) => return eprintln!("{}", e),
+        Ok(v) => v,
+    };
+
+    // Well; let's try with a pre-parsed map!
+
+    // The following offsets represent where '#' should be to match a sea-monster
+    let points = vec![
+        Location { y: 0, x: 18 },
+        Location { y: 1, x: 0 },
+        Location { y: 1, x: 5 },
+        Location { y: 1, x: 6 },
+        Location { y: 1, x: 11 },
+        Location { y: 1, x: 12 },
+        Location { y: 1, x: 17 },
+        Location { y: 1, x: 18 },
+        Location { y: 1, x: 19 },
+        Location { y: 2, x: 1 },
+        Location { y: 2, x: 4 },
+        Location { y: 2, x: 7 },
+        Location { y: 2, x: 10 },
+        Location { y: 2, x: 13 },
+        Location { y: 2, x: 16 },
+    ];
+
+    let size = map.len() as i32;
+
+    let mut mutated = vec![];
+
+    // Found by trying, this orientation is the only one that finds monsters!
+    for i in 0..size {
+        mutated.push(
+            map.iter()
+                .map(|l| l.chars().nth(i as usize).unwrap())
+                .collect::<String>(),
+        );
+    }
+
+    let mut highlighted = mutated.clone();
+
+    for y in 0..size {
+        for x in 0..size {
+            if points.iter().map(|l| l.translate(x, y)).all(|l| {
+                match mutated
+                    .get(l.y as usize)
+                    .and_then(|r| r.chars().nth(l.x as usize))
+                {
+                    Some('#') => true,
+                    _ => false,
+                }
+            }) {
+                println!("Found a sea-monster at {},{}", x, y);
+
+                points.iter().map(|l| l.translate(x, y)).for_each(|l| {
+                    let line = highlighted.get(l.y as usize).unwrap();
+                    highlighted[l.y as usize] = format!(
+                        "{}{}{}",
+                        &line[0..l.x as usize],
+                        "@",
+                        &line[l.x as usize + 1..]
+                    );
+                });
+            }
+        }
+    }
+
+    println!("Highlighted map:\n{}", highlighted.join("\n"));
+
+    let result: usize = highlighted
+        .iter()
+        .map(|l| l.chars().filter(|c| c.eq(&'#')).count())
+        .sum();
+    println!("Puzzle 2: Non-monster rough tiles = {}", result);
+}

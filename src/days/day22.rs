@@ -1,6 +1,4 @@
 use crate::util::input::read_raw_input;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::Hash;
 use std::ops::AddAssign;
 
 fn read_decks() -> Result<(Vec<usize>, Vec<usize>), String> {
